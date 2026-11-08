@@ -1,0 +1,24 @@
+{
+  "files.autoSave": "off",
+  "files.encoding": "utf8",
+  "search.exclude": {
+    "**/.venv": true,
+    "**/build": true,
+    "**/dist": true,
+    "uv.lock": true,
+    "**/**/__pycache__": true
+  },
+  "python.analysis.typeCheckingMode": "standard",
+  "flake8.enabled": true,
+  "isort.args": ["--profile", "black"],
+  "black-formatter.args": ["-t", "py312"],
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always"
+    }
+  }
+}

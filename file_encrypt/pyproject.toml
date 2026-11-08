@@ -1,0 +1,44 @@
+[project]
+name = "file-encrypt"
+version = "0.1.0"
+description = "8INF138 - TP2 - File Encryption"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography>=50.0.2",
+    "keyring>=25.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.10.0",
+    "flake8-black>=0.4.0",
+    "isort>=9.0.2",
+    "poethepoet>=0.48.0",
+    "pyclean>=3.7.0",
+]
+
+[tool.isort]
+profile = "black"
+indent = "    "
+
+[tool.poe.tasks]
+
+[tool.poe.tasks.clean]
+sequence = [
+  { cmd = "pyclean ." }
+]
+
+[tool.poe.tasks.lint]
+sequence = [
+  { cmd = "isort --profile black ." },
+  { cmd = "black ." },
+  { cmd = "flake8" }
+]
+
+[tool.poe.tasks.release]
+sequence = [
+  { ref = "lint" },
+  { ref = "clean" },
+  { cmd = "python -c \"import shutil; shutil.rmtree('.venv', ignore_errors=True)\"" },
+]
