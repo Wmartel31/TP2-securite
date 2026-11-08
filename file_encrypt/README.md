@@ -58,7 +58,7 @@ Python – version >= 3.12
       ```
    8. Lancer l'application :
       ```sh
-      uv run src/main.py
+      uv run src/app.py
       ```
 ## Consignes
 
