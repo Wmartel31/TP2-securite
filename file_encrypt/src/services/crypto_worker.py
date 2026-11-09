@@ -52,7 +52,17 @@ class CryptoWorker:
         déterminer quand et comment l'appeler.
         """
 
-        # TODO: compléter la fonction.
+        # mettre à zéro chaque octet des clés et libérer les références
+        if self.aes_key is not None:
+            for i in range (len(self.aes_key)):
+                self.aes_key[i] = 0
+
+        if self.hmac_key is not None:
+            for i in range (len(self.hmac_key)):
+                self.hmac_key[i] = 0
+
+        self.aes_key = None
+        self.hmac_key = None        
 
         print("DEBUG: Nettoyage mémoire (fonction à implémenter pour le TP)")
 
@@ -72,7 +82,15 @@ class CryptoWorker:
             le stockage sécurisé.
         """
 
-        # TODO: compléter la fonction.
+        key = keyring.get_password(SERVICE_NAME, ACCOUNT_NAME)
+
+        if key is None:
+            raise RuntimeError("Aucune clé trouvée dans le stockage sécurisé.")
+        else:
+            aes_key_hex, hmac_key_hex = key.split(":")
+            self.aes_key = bytearray.fromhex(aes_key_hex)
+            self.hmac_key = bytearray.fromhex(hmac_key_hex)
+        
 
         print("DEBUG: Chargement des clés (fonction à implémenter pour le TP)")
 
@@ -86,14 +104,13 @@ class CryptoWorker:
         {"exists": True} ou {"exists": False}
         """
 
-        # TODO: compléter la fonction.
+        key = keyring.get_password(SERVICE_NAME, ACCOUNT_NAME)
 
-        # Exemple de retour attendu (hardcodé
-        # ici pour l'exemple).
-        # Vous pouvez passer is_key à True ou
-        # False pour tester le comportement
-        # des autres parties de l'application.
-        is_key = True
+        if key is None:
+            is_key = False
+        else:
+            is_key = True
+        
         print(json.dumps({"exists": bool(is_key)}))
 
     def generate_key(self) -> None:
@@ -108,7 +125,18 @@ class CryptoWorker:
         et stockées dans keyring au format : <aes_hex>:<hmac_hex>
         """
 
-        # TODO: compléter la fonction.
+        # CLé AES et HMAC de 256 bits
+        self.aes_key = bytearray(os.urandom(32))
+        self.hmac_key = bytearray(os.urandom(32))
+
+        # Conversion en hexadécimal
+        aes_hex = self.aes_key.hex()
+        hmac_hex = self.hmac_key.hex()
+
+        # Stockage dans keyring
+        keyring.set_password(SERVICE_NAME, ACCOUNT_NAME, aes_hex + ":" + hmac_hex)
+
+        self._clean_memory()
 
         print("DEBUG: Génération de clé (fonction à implémenter pour le TP)")
 
