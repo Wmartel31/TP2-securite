@@ -4,7 +4,7 @@ Gestionnaire de Fichiers Chiffrés</h1>
 Au cours de ce début de session, nous avons vu plusieurs notions de cryptographie qu’il est important pour vous de comprendre. Ainsi, ce travail pratique a pour objectif de vous permettre de mettre en pratique certains éléments que nous avons vus en classe à travers un exemple concret.
 
 ## Auteurs
- - [Code permanent]: [nom], [prénom]
+ - MARW31050600: Martel, William
  - [Code permanent]: [nom], [prénom]
 
 ## Compatibilité
