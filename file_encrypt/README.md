@@ -5,7 +5,7 @@ Au cours de ce début de session, nous avons vu plusieurs notions de cryptograph
 
 ## Auteurs
  - MARW31050600: Martel, William
- - [Code permanent]: [nom], [prénom]
+ - KAIA24120200: Kaina, Abdelaali
 
 ## Compatibilité
 
