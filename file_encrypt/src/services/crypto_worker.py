@@ -50,6 +50,19 @@ class CryptoWorker:
         Vous savez que cette fonction est
         à usage interne uniquement, à vous de
         déterminer quand et comment l'appeler.
+
+        --------------------------------------
+        Utilisation de l'IA :
+        Outil : ChatGPT
+
+        Utilisation :
+        Aide à la compréhension et à la vérification
+        de l'implémentation de cette fonction.
+
+        Prompts utilisés :
+        - "Est-ce que mon code est correct ?"
+        (code de la fonction fourni)
+        - "Pourquoi faut remettre à 0 ?"
         """
 
         # mettre à zéro chaque octet des clés et libérer les références
@@ -80,6 +93,15 @@ class CryptoWorker:
         RuntimeError
             Si aucune clé n'est trouvée dans
             le stockage sécurisé.
+
+        -------------------------
+        Utilisation de l'IA
+        Outil : ChatGPT
+
+        Utilisation :
+            Aide à la compréhension de keyring,
+            de la conversion hexadécimale en bytearray
+            et vérification du code.
         """
 
         key = keyring.get_password(SERVICE_NAME, ACCOUNT_NAME)
@@ -102,6 +124,15 @@ class CryptoWorker:
         Retourne le résultat au format JSON
         sur la sortie standard (stdout) tel que :
         {"exists": True} ou {"exists": False}
+
+        -------------------------
+        Utilisation de l'IA
+        Outil : ChatGPT
+
+        Utilisation :
+            Aide à la compréhension de keyring,
+            des paramètres de la fonction get_password
+            et vérification du code.
         """
 
         key = keyring.get_password(SERVICE_NAME, ACCOUNT_NAME)
@@ -123,6 +154,17 @@ class CryptoWorker:
 
         Elles sont ensuite converties en hexadécimal
         et stockées dans keyring au format : <aes_hex>:<hmac_hex>
+
+        -------------------------
+        Utilisation de l'IA
+        Outil : ChatGPT
+
+        Utilisation :
+            Aide à la compréhension de la génération
+            des clés AES et HMAC de 256 bits,
+            de leur conversion en hexadécimal et
+            de leur stockage avec keyring.
+            Vérification du code de la fonction.
         """
 
         # CLé AES et HMAC de 256 bits
