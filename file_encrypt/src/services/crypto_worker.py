@@ -3,6 +3,9 @@ import json
 import os
 
 import keyring
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, hmac, padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 ####
 #
@@ -23,6 +26,14 @@ import keyring
 ####
 SERVICE_NAME = "UQAC-8INF138"
 ACCOUNT_NAME = "TP2-APP"
+
+####
+# Tailles (en octets) utilisées par le format des fichiers .dcrypt :
+# IV (16) || cryptogramme (multiple de 16) || tag HMAC-SHA256 (32)
+####
+IV_SIZE = 16
+BLOCK_SIZE = 16
+TAG_SIZE = 32
 
 
 class CryptoWorker:
@@ -54,17 +65,15 @@ class CryptoWorker:
 
         # mettre à zéro chaque octet des clés et libérer les références
         if self.aes_key is not None:
-            for i in range (len(self.aes_key)):
+            for i in range(len(self.aes_key)):
                 self.aes_key[i] = 0
 
         if self.hmac_key is not None:
-            for i in range (len(self.hmac_key)):
+            for i in range(len(self.hmac_key)):
                 self.hmac_key[i] = 0
 
         self.aes_key = None
-        self.hmac_key = None        
-
-        print("DEBUG: Nettoyage mémoire (fonction à implémenter pour le TP)")
+        self.hmac_key = None
 
     def _load_keys(self) -> None:
         """
@@ -90,9 +99,6 @@ class CryptoWorker:
             aes_key_hex, hmac_key_hex = key.split(":")
             self.aes_key = bytearray.fromhex(aes_key_hex)
             self.hmac_key = bytearray.fromhex(hmac_key_hex)
-        
-
-        print("DEBUG: Chargement des clés (fonction à implémenter pour le TP)")
 
     def check_key(self):
         """
@@ -110,7 +116,7 @@ class CryptoWorker:
             is_key = False
         else:
             is_key = True
-        
+
         print(json.dumps({"exists": bool(is_key)}))
 
     def generate_key(self) -> None:
@@ -138,8 +144,6 @@ class CryptoWorker:
 
         self._clean_memory()
 
-        print("DEBUG: Génération de clé (fonction à implémenter pour le TP)")
-
     def encrypt(self, input_path: str, output_path: str) -> None:
         """
         Chiffre un fichier avec AES-256-CBC
@@ -161,13 +165,55 @@ class CryptoWorker:
         5. Chiffrer avec AES-256-CBC
         6. Calculer HMAC sur IV + ciphertext
         7. Écrire IV + ciphertext + HMAC dans le fichier de sortie
+
+        Usage d'IA générative
+        ---------------------
+        Fonction écrite avec l'aide de Claude (Anthropic), puis relue
+        et testée par l'équipe.
+
+        Prompt
+        ------
+            1. [Conversation Discord avec William collée telle quelle,
+               où il demande où j'en suis dans le devoir]
+            2. "https://github.com/Wmartel31/TP2-securite"
+               (en réponse à Claude qui proposait d'écrire encrypt et
+               decrypt à partir du code de William)
         """
 
-        # TODO: compléter la fonction.
+        try:
+            # 1. Charger les clés (bytearray de 32 octets chacune)
+            self._load_keys()
 
-        print(
-            f"DEBUG: Chiffrement de {input_path} vers {output_path} (fonction à implémenter pour le TP)"
-        )
+            # 2. Lire le fichier d'entrée
+            with open(input_path, "rb") as file:
+                plaintext = file.read()
+
+            # 3. Padding PKCS#7 sur des blocs de 128 bits.
+            # Un bloc complet est ajouté si la taille est déjà
+            # un multiple de 16 octets.
+            padder = padding.PKCS7(BLOCK_SIZE * 8).padder()
+            padded = padder.update(plaintext) + padder.finalize()
+
+            # 4. IV aléatoire et unique pour chaque chiffrement
+            iv = os.urandom(IV_SIZE)
+
+            # 5. Chiffrement AES-256-CBC
+            encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv)).encryptor()
+            ciphertext = encryptor.update(padded) + encryptor.finalize()
+
+            # 6. HMAC-SHA256 sur IV + cryptogramme (Encrypt-then-MAC),
+            # avec une clé distincte de la clé AES
+            mac = hmac.HMAC(self.hmac_key, hashes.SHA256())
+            mac.update(iv + ciphertext)
+            tag = mac.finalize()
+
+            # 7. Écriture : IV || cryptogramme || tag
+            with open(output_path, "wb") as file:
+                file.write(iv + ciphertext + tag)
+
+        finally:
+            # Les clés sont effacées de la mémoire, même en cas d'erreur
+            self._clean_memory()
 
     def decrypt(self, input_path: str, output_path: str) -> None:
         """
@@ -197,13 +243,72 @@ class CryptoWorker:
         5. Dépadder avec PKCS#7
         6. Écrire les données déchiffrée
            dans le fichier de sortie
+
+        Usage d'IA générative
+        ---------------------
+        Fonction écrite avec l'aide de Claude (Anthropic), puis relue
+        et testée par l'équipe.
+
+        Prompt
+        ------
+            1. [Conversation Discord avec William collée telle quelle,
+               où il demande où j'en suis dans le devoir]
+            2. "https://github.com/Wmartel31/TP2-securite"
+               (en réponse à Claude qui proposait d'écrire encrypt et
+               decrypt à partir du code de William)
         """
 
-        # TODO: compléter la fonction.
+        # Même message pour toutes les erreurs : l'attaquant ne doit
+        # pas savoir si c'est le format, le HMAC ou le padding qui
+        # a échoué (sinon, risque d'attaque par oracle de padding).
+        error_message = "Fichier invalide, corrompu ou HMAC invalide."
 
-        print(
-            f"DEBUG: Déchiffrement de {input_path} vers {output_path} (fonction à implémenter pour le TP)"
-        )
+        try:
+            # 1. Charger les clés
+            self._load_keys()
+
+            # 2. Lire le fichier d'entrée
+            with open(input_path, "rb") as file:
+                data = file.read()
+
+            # 3. Vérifier la validité du fichier : au minimum
+            # IV (16) + un bloc (16) + tag (32) = 64 octets, et un
+            # cryptogramme dont la taille est un multiple de 16.
+            ciphertext_size = len(data) - IV_SIZE - TAG_SIZE
+            if ciphertext_size < BLOCK_SIZE or ciphertext_size % BLOCK_SIZE != 0:
+                raise RuntimeError(error_message)
+
+            iv = data[:IV_SIZE]
+            ciphertext = data[IV_SIZE:-TAG_SIZE]
+            tag = data[-TAG_SIZE:]
+
+            # 4. Vérifier le HMAC AVANT tout déchiffrement.
+            # verify() compare en temps constant.
+            mac = hmac.HMAC(self.hmac_key, hashes.SHA256())
+            mac.update(iv + ciphertext)
+            try:
+                mac.verify(tag)
+            except InvalidSignature:
+                raise RuntimeError(error_message) from None
+
+            # 5. Déchiffrement AES-256-CBC
+            decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv)).decryptor()
+            padded = decryptor.update(ciphertext) + decryptor.finalize()
+
+            # 6. Retirer le padding PKCS#7
+            unpadder = padding.PKCS7(BLOCK_SIZE * 8).unpadder()
+            try:
+                plaintext = unpadder.update(padded) + unpadder.finalize()
+            except ValueError:
+                raise RuntimeError(error_message) from None
+
+            # 7. Écrire le fichier de sortie, seulement si tout a réussi
+            with open(output_path, "wb") as file:
+                file.write(plaintext)
+
+        finally:
+            # Les clés sont effacées de la mémoire, même en cas d'erreur
+            self._clean_memory()
 
 
 def main() -> None:
